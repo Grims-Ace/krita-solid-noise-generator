@@ -31,14 +31,6 @@ A Krita plugin that generates solid Perlin noise at your canvas resolution. Supp
 
 ---
 
-## Performance
-
-On first use the plugin compiles a small C noise kernel using `gcc` (available by default on Linux, and via Xcode Command Line Tools on macOS). This makes generation very fast — around 0.1–0.5 seconds at 1080p depending on octave count. The status bar shows `[C]` when the fast path is active.
-
-If `gcc` is not found, the plugin falls back to a pure Python implementation automatically — same results, just slower.
-
----
-
 ## How it works
 
 Perlin noise is computed using **fractal Brownian motion (fBm)**: multiple octaves of noise are summed, each at double the frequency and half the amplitude of the last:
