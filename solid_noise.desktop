@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=Krita/PythonPlugin
+X-KDE-Library=solid_noise
+X-Krita-Manual=Manual.html
+Name=Solid Noise Generator
+Comment=Generates Perlin noise on the canvas with configurable octave detail
