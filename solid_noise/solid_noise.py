@@ -2,7 +2,7 @@
 Solid Noise Generator — Krita Plugin
 Generates Perlin noise at canvas resolution with configurable octaves (1-16).
 
-Speed strategy: compile a tiny C shared library at first use via gcc + ctypes.
+Compile a tiny C shared library at first use via gcc + ctypes.
 This gives near-native performance (~0.1s at 1080p, 4 octaves) while requiring
 zero third-party Python packages.  If gcc is unavailable we fall back to a
 pure-Python path automatically.
