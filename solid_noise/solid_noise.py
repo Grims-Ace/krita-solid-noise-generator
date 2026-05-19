@@ -43,7 +43,7 @@ def _grad(h, x, y):
     return -x - y
 
 
-def generate(width, height, octaves, scale, seed, invert, progress_cb):
+def generate(width, height, octaves, base_scale, zoom, seed, invert, progress_cb):
     perms = []
     for i in range(octaves):
         rng = random.Random(seed + i)
@@ -56,10 +56,14 @@ def generate(width, height, octaves, scale, seed, invert, progress_cb):
     max_a = sum(amps)
     acc = [0.0] * (width * height)
 
+    # Effective scale: less zoom = smaller fs = zoomed in (larger features)
+    # More zoom = larger fs = zoomed out (smaller features)
+    effective_scale = base_scale * zoom
+
     for oi in range(octaves):
         p = perms[oi]
         amp = amps[oi]
-        fs = scale * freqs[oi]
+        fs = effective_scale * freqs[oi]
         inv_h = fs / height
         inv_w = fs / width
         for y in range(height):
@@ -122,12 +126,13 @@ class NoiseWorker(QObject):
     finished = pyqtSignal(bytes, int, int)
     error = pyqtSignal(str)
 
-    def __init__(self, width, height, octaves, scale, seed, invert):
+    def __init__(self, width, height, octaves, base_scale, zoom, seed, invert):
         super().__init__()
         self.width = width
         self.height = height
         self.octaves = octaves
-        self.scale = scale
+        self.base_scale = base_scale
+        self.zoom = zoom
         self.seed = seed
         self.invert = invert
 
@@ -137,7 +142,8 @@ class NoiseWorker(QObject):
                 self.width,
                 self.height,
                 self.octaves,
-                self.scale,
+                self.base_scale,
+                self.zoom,
                 self.seed,
                 self.invert,
                 self.progress.emit,
@@ -190,15 +196,29 @@ class SolidNoiseDock(DockWidget):
         ol.addWidget(hint)
         layout.addWidget(og)
 
-        # Scale
-        sg = QGroupBox("Scale")
-        sl = QHBoxLayout(sg)
-        sl.addWidget(QLabel("Zoom:"))
-        self._scale_spin = QDoubleSpinBox()
-        self._scale_spin.setRange(0.1, 32.0)
-        self._scale_spin.setSingleStep(0.5)
-        self._scale_spin.setValue(4.0)
-        sl.addWidget(self._scale_spin)
+        # Zoom
+        sg = QGroupBox("Zoom")
+        sl = QVBoxLayout(sg)
+
+        # Zoom Slider
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Factor:"))
+        self._zoom_slider = QSlider(Qt.Horizontal)
+        self._zoom_slider.setRange(10, 1000)  # 0.1 to 10.0
+        self._zoom_slider.setValue(100)  # 1.0
+        self._zoom_lbl = QLabel("1.00x")
+        self._zoom_lbl.setMinimumWidth(40)
+        self._zoom_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self._zoom_slider.valueChanged.connect(
+            lambda v: self._zoom_lbl.setText(f"{v / 100:.2f}x")
+        )
+        row.addWidget(self._zoom_slider)
+        row.addWidget(self._zoom_lbl)
+        sl.addLayout(row)
+
+        hint = QLabel("Zoom < 1.0 zooms in, > 1.0 zooms out")
+        hint.setStyleSheet("color: palette(mid); font-size: 10px;")
+        sl.addWidget(hint)
         layout.addWidget(sg)
 
         # Seed
@@ -267,7 +287,8 @@ class SolidNoiseDock(DockWidget):
             w,
             h,
             self._oct_slider.value(),
-            self._scale_spin.value(),
+            4.0,  # Default base scale
+            self._zoom_slider.value() / 100.0,
             self._seed_spin.value(),
             self._invert_chk.isChecked(),
         )
